@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
@@ -7,4 +7,24 @@
 <div class="text-center">
     <h1 class="display-4">Welcome v1.0</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+    @if (Model.MaintenanceMode)
+    {
+        <p class="alert alert-warning">Le site est actuellement en maintenance. Veuillez réessayer plus tard.</p>
+    }
+    else
+    {
+        <p class="alert alert-success">Le site est opérationnel. Bienvenue !</p>
+    }
+
+    @if (!Model.MaintenanceMode)
+    {
+        <div class="alert alert-info mt-3">
+            Base de données :
+            <br />
+            Nombre de quiz : <strong>@Model.QuizCount</strong>
+            <br />
+            Nombre de questions : <strong>@Model.QuestionCount</strong>
+        </div>
+    }
 </div>
