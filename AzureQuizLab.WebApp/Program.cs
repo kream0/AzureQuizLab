@@ -16,7 +16,7 @@ builder.Services.AddDbContext<QuizDbContext>(options =>
         sqlOptions => sqlOptions.EnableRetryOnFailure()
     ));
 
-builder.Logging.ClearProviders();
+// builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddAzureWebAppDiagnostics();
 
