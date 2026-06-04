@@ -16,6 +16,8 @@ Lab instructions: https://github.com/Sybaris-Classroom/az-204 — see `TP1/`, `T
 | **TP1** — Web App created + deployed | ✅ Done | Live at https://azurequizlab-07.azurewebsites.net |
 | **TP2** — Azure SQL + EF Core + schema | ✅ Done | Home page shows `Nombre de quiz : 1`, `Nombre de questions : 7` from DB |
 | **TP3** — Functions (HTTP/Queue/Timer) | ✅ Done | All 3 functions registered; full flow tested end-to-end |
+| **TP5** — Blob Storage (keyless auth) | ✅ Done | Upload/list/download round-trip on `/BlobStorage` via container `quiz-results` |
+| **TP6** — Monitoring (App Insights) | ✅ Done | `/logs` `/slow` `/boom` live; ILogger traces, exceptions, request durations verified in App Insights via KQL |
 
 **Optional / not yet done:**
 - TP3 §9 — a dedicated GitHub Actions workflow to deploy the **Functions** app (only the WebApp has CI today).
@@ -63,6 +65,9 @@ az account set --subscription bc02abea-1834-4e54-86f9-d9c75d8895ca
 | Storage (Functions) | `azurequizlab07func` | Standard_LRS; hosts queue `quiz-queue` + content share `func-azurequizlab-07-content` |
 | SQL Server | `sql-quizlab-00.database.windows.net` | admin login `sqladmin` (password in gitignored config) |
 | SQL Database | `AzureQuizLabDB` | Basic tier; schema in `AzureQuizLab.sql` |
+| Storage (Blob, TP5) | `storagequizlab07` | Standard_LRS; container `quiz-results`; keyless (RBAC Storage Blob Data Contributor on WebApp managed identity) |
+| App Insights (TP6) | `Application-Insights-07` | Workspace-based → Log Analytics `law-quizlab-07`; app id `27e70b12-38d1-49db-8305-5e57ac194f41` |
+| Alert (TP6 bonus) | `alert-quizlab-errors` | Fires when `exceptions/count > 5` in 5min → action group `ag-quizlab-email` |
 
 ---
 
@@ -165,7 +170,15 @@ az functionapp start -n func-azurequizlab-07 -g RG-Student-07
    Linux dynamic workers are not available here — the Function App is **Windows** Consumption.
 4. **NuGet: use nuget.org directly.** The default Artifactory proxy returns **403**. `nuget.config`
    pins `nuget.org`; keep it. Install packages with `--source https://api.nuget.org/v3/index.json` if needed.
-5. **Never commit secrets.** `appsettings.Development.json` and `local.settings.json` are gitignored
+5. **App Insights needs the SDK, not codeless, on this app.** The WebApp is **Linux** `DOTNETCORE|10.0`;
+   codeless auto-instrumentation does **not** attach for .NET 10 (no requests/traces/exceptions land).
+   `Program.cs` calls `builder.Services.AddApplicationInsightsTelemetry()` (package
+   `Microsoft.ApplicationInsights.AspNetCore`), which reads `APPLICATIONINSIGHTS_CONNECTION_STRING`
+   from app settings. Keep `// builder.Logging.ClearProviders();` commented so ILogger traces flow.
+6. **Query App Insights with `-o json`, not `-o table`.** `az monitor app-insights query -o table`
+   silently renders empty even when rows exist; parse the JSON `tables[0].rows` instead. Telemetry
+   ingestion lags ~1-3 min. App id above; e.g. `requests | summarize avg(duration) by name`.
+7. **Never commit secrets.** `appsettings.Development.json` and `local.settings.json` are gitignored
    (root `.gitignore` + nested `AzureQuizLab.WebApp/.gitignore`). The root `.gitignore` also blocks
    `*.publishsettings`. Verify before committing: `git diff --cached | grep -iE "Password=|AccountKey="`.
 
