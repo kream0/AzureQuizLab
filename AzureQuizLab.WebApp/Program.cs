@@ -8,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 
+builder.Services.AddApplicationInsightsTelemetry();
+
 builder.Services.AddScoped<BlobService>();
 
 builder.Services.AddDbContext<QuizDbContext>(options =>
